@@ -13,8 +13,8 @@ using Robust.Shared.Maths;
 namespace OpenDreamRuntime {
     class DreamMapManager : IDreamMapManager {
         public struct Cell {
-            public DreamObject Turf;
-            public DreamObject Area;
+            public DreamValue Turf;
+            public DreamValue Area;
         };
 
         [Dependency] private readonly IMapManager _mapManager = default!;
@@ -26,7 +26,7 @@ namespace OpenDreamRuntime {
         public int Levels { get => _levels.Count; }
 
         private List<Cell[,]> _levels = new();
-        private Dictionary<DreamPath, DreamObject> _areas = new();
+        private Dictionary<DreamPath, DreamValue> _areas = new();
         private DreamPath _defaultArea, _defaultTurf;
 
         public void Initialize() {
@@ -50,12 +50,12 @@ namespace OpenDreamRuntime {
             }
         }
 
-        public void SetTurf(int x, int y, int z, DreamObject turf, bool replace = true) {
+        public void SetTurf(int x, int y, int z, DreamValue turf, bool replace = true) {
             if (!IsValidCoordinate(x, y, z)) throw new ArgumentException("Invalid coordinates");
 
             _levels[z - 1][x - 1, y - 1].Turf = turf;
 
-            EntityUid entity = _atomManager.GetAtomEntity(turf);
+            EntityUid entity = _atomManager.GetAtomEntity(turf.GetValueAsDreamObject());
             if (!_entityManager.TryGetComponent<TransformComponent>(entity, out var transform))
                 return;
 
@@ -65,38 +65,39 @@ namespace OpenDreamRuntime {
             if (replace) {
                 //Every reference to the old turf becomes the new turf
                 //Do this by turning the old turf object into the new one
-                DreamObject existingTurf = GetTurf(x, y, z);
-                existingTurf.CopyFrom(turf);
+                DreamObject existingTurf = GetTurf(x, y, z).GetValueAsDreamObject();
+                existingTurf.CopyFrom(turf.GetValueAsDreamObject());
             }
         }
 
-        public void SetArea(int x, int y, int z, DreamObject area) {
+        public void SetArea(int x, int y, int z, DreamValue area) {
             if (!IsValidCoordinate(x, y, z)) throw new ArgumentException("Invalid coordinates");
-            if (area.GetVariable("x").GetValueAsInteger() > x) area.SetVariable("x", new DreamValue(x));
-            if (area.GetVariable("y").GetValueAsInteger() > y) area.SetVariable("y", new DreamValue(y));
+            DreamObject cachedArea = area.GetValueAsDreamObject();
+            if (cachedArea.GetVariable("x").GetValueAsInteger() > x) cachedArea.SetVariable("x", new DreamValue(x));
+            if (cachedArea.GetVariable("y").GetValueAsInteger() > y) cachedArea.SetVariable("y", new DreamValue(y));
 
             _levels[z - 1][x - 1, y - 1].Area = area;
         }
 
-        public DreamObject GetTurf(int x, int y, int z) {
-            if (!IsValidCoordinate(x, y, z)) return null;
+        public DreamValue GetTurf(int x, int y, int z) {
+            if (!IsValidCoordinate(x, y, z)) return DreamValue.Null;
 
             return _levels[z - 1][x - 1, y - 1].Turf;
         }
 
         //Returns an area loaded by a DMM
         //Does not include areas created by DM code
-        public DreamObject GetArea(DreamPath type) {
-            if (!_areas.TryGetValue(type, out DreamObject area)) {
+        public DreamValue GetArea(DreamPath type) {
+            if (!_areas.TryGetValue(type, out DreamValue area)) {
                 area = _dreamManager.ObjectTree.CreateObject(type);
-                area.InitSpawn(new(null));
+                area.GetValueAsDreamObject().InitSpawn(new(null));
                 _areas.Add(type, area);
             }
 
             return area;
         }
 
-        public DreamObject GetAreaAt(int x, int y, int z) {
+        public DreamValue GetAreaAt(int x, int y, int z) {
             if (!IsValidCoordinate(x, y, z)) throw new ArgumentException("Invalid coordinates");
 
             return _levels[z - 1][x - 1, y - 1].Area;
@@ -110,9 +111,9 @@ namespace OpenDreamRuntime {
 
                     for (int x = 1; x <= Size.X; x++) {
                         for (int y = 1; y <= Size.Y; y++) {
-                            DreamObject turf = _dreamManager.ObjectTree.CreateObject(_defaultTurf);
+                            DreamValue turf = _dreamManager.ObjectTree.CreateObject(_defaultTurf);
 
-                            turf.InitSpawn(new(null));
+                            turf.GetValueAsDreamObject().InitSpawn(new(null));
                             SetTurf(x, y, z, turf, replace: false);
                             SetArea(x, y, z, GetArea(_defaultArea));
                         }
@@ -137,12 +138,12 @@ namespace OpenDreamRuntime {
             foreach (string cell in block.Cells) {
                 CellDefinitionJson cellDefinition = cellDefinitions[cell];
                 DreamPath areaType = cellDefinition.Area != null ? _dreamManager.ObjectTree.Types[cellDefinition.Area.Type].Path : _defaultArea;
-                DreamObject area = GetArea(areaType);
+                DreamValue area = GetArea(areaType);
 
                 int x = block.X + blockX - 1;
                 int y = block.Y + block.Height - blockY;
 
-                DreamObject turf;
+                DreamValue turf;
                 if (cellDefinition.Turf != null) {
                     turf = CreateMapObject(cellDefinition.Turf);
                 } else {
@@ -151,12 +152,12 @@ namespace OpenDreamRuntime {
                 
                 SetTurf(x, y, block.Z, turf);
                 SetArea(x, y, block.Z, area);
-                turf.InitSpawn(new DreamProcArguments(null));
+                turf.GetValueAsDreamObject().InitSpawn(new DreamProcArguments(null));
                     
 
                 foreach (MapObjectJson mapObject in cellDefinition.Objects) {
                     var obj = CreateMapObject(mapObject);
-                    obj.InitSpawn(new DreamProcArguments(new() { new DreamValue(turf) }));
+                    obj.GetValueAsDreamObject().InitSpawn(new DreamProcArguments(new() { new DreamValue(turf) }));
                 }
 
                 blockX++;
@@ -167,7 +168,7 @@ namespace OpenDreamRuntime {
             }
         }
 
-        private DreamObject CreateMapObject(MapObjectJson mapObject) {
+        private DreamValue CreateMapObject(MapObjectJson mapObject) {
             DreamObjectDefinition definition = _dreamManager.ObjectTree.GetObjectDefinition(mapObject.Type);
             if (mapObject.VarOverrides?.Count > 0) {
                 definition = new DreamObjectDefinition(definition);
@@ -179,7 +180,7 @@ namespace OpenDreamRuntime {
                 }
             }
 
-            return new DreamObject(definition);
+            return DreamObject.CreateWrappedObject(definition);
         }
     }
 }

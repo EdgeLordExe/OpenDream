@@ -15,7 +15,7 @@ namespace OpenDreamRuntime
         [Dependency] private readonly IServerNetManager _netManager;
 
         private readonly Dictionary<IPlayerSession, DreamConnection> _connections = new();
-        private readonly Dictionary<DreamObject, DreamConnection> _clientToConnection = new();
+        private readonly Dictionary<DreamValue, DreamConnection> _clientToConnection = new();
 
         public DreamConnection GetConnectionBySession(IPlayerSession session) => _connections[session];
         public IEnumerable<DreamConnection> Connections => _connections.Values;
@@ -88,7 +88,7 @@ namespace OpenDreamRuntime
 
                     _clientToConnection.Add(client, connection);
                     _connections.Add(e.Session, connection);
-                    client.InitSpawn(new DreamProcArguments(new() { DreamValue.Null }));
+                    client.GetValueAsDreamObject().InitSpawn(new DreamProcArguments(new() { DreamValue.Null }));
 
                     break;
                 }
@@ -103,23 +103,23 @@ namespace OpenDreamRuntime
             }
         }
 
-        public IPlayerSession GetSessionFromClient(DreamObject client)
+        public IPlayerSession GetSessionFromClient(DreamValue client)
         {
             return _clientToConnection[client].Session;
         }
 
-        public DreamObject GetClientFromMob(DreamObject mob)
+        public DreamValue GetClientFromMob(DreamValue mob)
         {
-            foreach (DreamObject client in _clientToConnection.Keys)
+            foreach (DreamValue client in _clientToConnection.Keys)
             {
-                if (client.GetVariable("mob").GetValueAsDreamObject() == mob)
+                if (client.GetValueAsDreamObject().GetVariable("mob").GetValueAsDreamObject() == mob.GetValueAsDreamObject())
                     return client;
             }
 
-            return null;
+            return DreamValue.Null;
         }
 
-        public DreamConnection GetConnectionFromMob(DreamObject mob)
+        public DreamConnection GetConnectionFromMob(DreamValue mob)
         {
             foreach (var connection in _connections.Values)
             {
@@ -130,7 +130,7 @@ namespace OpenDreamRuntime
             return null;
         }
 
-        public DreamConnection GetConnectionFromClient(DreamObject client)
+        public DreamConnection GetConnectionFromClient(DreamValue client)
         {
             foreach (var connection in _connections.Values)
             {

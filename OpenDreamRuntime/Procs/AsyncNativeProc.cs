@@ -9,8 +9,8 @@ namespace OpenDreamRuntime.Procs {
     public class AsyncNativeProc : DreamProc {
         public class State : ProcState
         {
-            public DreamObject Src;
-            public DreamObject Usr;
+            public DreamValue Src;
+            public DreamValue Usr;
             public DreamProcArguments Arguments;
 
             private AsyncNativeProc _proc;
@@ -25,7 +25,7 @@ namespace OpenDreamRuntime.Procs {
 
             private bool _inResume;
 
-            public State(AsyncNativeProc proc, Func<State, Task<DreamValue>> taskFunc, DreamThread thread, DreamObject src, DreamObject usr, DreamProcArguments arguments)
+            public State(AsyncNativeProc proc, Func<State, Task<DreamValue>> taskFunc, DreamThread thread, DreamValue src, DreamValue usr, DreamProcArguments arguments)
                 : base(thread)
             {
                 _proc = proc;
@@ -151,7 +151,7 @@ namespace OpenDreamRuntime.Procs {
             _taskFunc = taskFunc;
         }
 
-        public override ProcState CreateState(DreamThread thread, DreamObject src, DreamObject usr, DreamProcArguments arguments)
+        public override ProcState CreateState(DreamThread thread, DreamValue src, DreamValue usr, DreamProcArguments arguments)
         {
             if (_defaultArgumentValues != null) {
                 foreach (KeyValuePair<string, DreamValue> defaultArgumentValue in _defaultArgumentValues) {

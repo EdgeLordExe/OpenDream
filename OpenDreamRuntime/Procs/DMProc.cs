@@ -19,7 +19,7 @@ namespace OpenDreamRuntime.Procs {
             _maxStackSize = maxStackSize;
         }
 
-        public override DMProcState CreateState(DreamThread thread, DreamObject src, DreamObject usr, DreamProcArguments arguments)
+        public override DMProcState CreateState(DreamThread thread, DreamValue src, DreamValue usr, DreamProcArguments arguments)
         {
             return new DMProcState(this, thread, _maxStackSize, src, usr, arguments);
         }

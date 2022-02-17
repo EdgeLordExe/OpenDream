@@ -36,10 +36,10 @@ namespace OpenDreamRuntime {
             ArgumentTypes = argumentTypes ?? new();
         }
 
-        public abstract ProcState CreateState(DreamThread thread, DreamObject src, DreamObject usr, DreamProcArguments arguments);
+        public abstract ProcState CreateState(DreamThread thread, DreamValue src, DreamValue usr, DreamProcArguments arguments);
 
         // Execute this proc. This will behave as if the proc has `set waitfor = 0`
-        public DreamValue Spawn(DreamObject src, DreamProcArguments arguments, DreamObject usr = null) {
+        public DreamValue Spawn(DreamValue src, DreamProcArguments arguments, DreamValue usr) {
             var context = new DreamThread();
             var state = CreateState(context, src, usr, arguments);
             context.PushProcState(state);
@@ -105,7 +105,7 @@ namespace OpenDreamRuntime {
         // The amount of stack frames containing `WaitFor = false`
         private int _syncCount = 0;
 
-        public static DreamValue Run(DreamProc proc, DreamObject src, DreamObject usr, DreamProcArguments? arguments) {
+        public static DreamValue Run(DreamProc proc, DreamValue src, DreamValue usr, DreamProcArguments? arguments) {
             var context = new DreamThread();
             var state = proc.CreateState(context, src, usr, arguments ?? new DreamProcArguments(null));
             context.PushProcState(state);

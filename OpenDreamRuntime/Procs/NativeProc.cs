@@ -6,18 +6,18 @@ using OpenDreamShared.Dream.Procs;
 
 namespace OpenDreamRuntime.Procs {
     public class NativeProc : DreamProc {
-        public delegate DreamValue HandlerFn(DreamObject src, DreamObject usr, DreamProcArguments arguments);
+        public delegate DreamValue HandlerFn(DreamValue src, DreamValue usr, DreamProcArguments arguments);
 
         public class State : ProcState
         {
-            public DreamObject Src;
-            public DreamObject Usr;
+            public DreamValue Src;
+            public DreamValue Usr;
             public DreamProcArguments Arguments;
 
             private NativeProc _proc;
             public override DreamProc Proc => _proc;
 
-            public State(NativeProc proc, DreamThread thread, DreamObject src, DreamObject usr, DreamProcArguments arguments)
+            public State(NativeProc proc, DreamThread thread, DreamValue src, DreamValue usr, DreamProcArguments arguments)
                 : base(thread)
             {
                 _proc = proc;
@@ -54,7 +54,7 @@ namespace OpenDreamRuntime.Procs {
             Handler = handler;
         }
 
-        public override State CreateState(DreamThread thread, DreamObject src, DreamObject usr, DreamProcArguments arguments)
+        public override State CreateState(DreamThread thread, DreamValue src, DreamValue usr, DreamProcArguments arguments)
         {
             if (_defaultArgumentValues != null) {
                 foreach (KeyValuePair<string, DreamValue> defaultArgumentValue in _defaultArgumentValues) {
@@ -70,7 +70,7 @@ namespace OpenDreamRuntime.Procs {
         }
 
         public static ProcState CreateAnonymousState(DreamThread thread, HandlerFn handler) {
-            return new State(null, thread, null, null, new DreamProcArguments(null));
+            return new State(null, thread, DreamValue.Null, DreamValue.Null, new DreamProcArguments(null));
         }
     }
 }

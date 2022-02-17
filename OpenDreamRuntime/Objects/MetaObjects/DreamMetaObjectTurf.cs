@@ -5,7 +5,7 @@ namespace OpenDreamRuntime.Objects.MetaObjects {
     class DreamMetaObjectTurf : DreamMetaObjectAtom {
         private IDreamMapManager _dreamMapManager = IoCManager.Resolve<IDreamMapManager>();
 
-        public override void OnVariableSet(DreamObject dreamObject, string variableName, DreamValue variableValue, DreamValue oldVariableValue) {
+        public override void OnVariableSet(DreamValue dreamObject, string variableName, DreamValue variableValue, DreamValue oldVariableValue) {
             base.OnVariableSet(dreamObject, variableName, variableValue, oldVariableValue);
 
             if (variableName == "loc") {

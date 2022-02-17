@@ -12,8 +12,8 @@ namespace OpenDreamRuntime.Objects.MetaObjects {
         private IAtomManager _atomManager = IoCManager.Resolve<IAtomManager>();
         private IEntityManager _entityManager = IoCManager.Resolve<IEntityManager>();
 
-        public override void OnObjectCreated(DreamObject dreamObject, DreamProcArguments creationArguments) {
-            _dreamManager.WorldContentsList.AddValue(new DreamValue(dreamObject));
+        public override void OnObjectCreated(DreamValue dreamObject, DreamProcArguments creationArguments) {
+            _dreamManager.WorldContentsList.AddValue(dreamObject);
 
             DreamValue locArgument = creationArguments.GetArgument(0, "loc");
             if (locArgument.TryGetValueAsDreamObjectOfType(DreamPath.Atom, out _)) {

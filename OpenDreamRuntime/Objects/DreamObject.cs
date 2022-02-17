@@ -8,9 +8,17 @@ namespace OpenDreamRuntime.Objects {
         public DreamObjectDefinition ObjectDefinition { get; protected set; }
         public bool Deleted = false;
 
+        public DreamValue container {get; private set;}
         private Dictionary<string, DreamValue> _variables = new();
 
-        public DreamObject(DreamObjectDefinition objectDefinition) {
+        public static DreamValue CreateWrappedObject(DreamObjectDefinition objectDefinition){
+            DreamObject dreamObject = new DreamObject(objectDefinition);
+            DreamValue returnValue = new DreamValue(dreamObject);
+            dreamObject.container = returnValue;
+            return returnValue;
+        }
+
+        protected DreamObject(DreamObjectDefinition objectDefinition) {
             ObjectDefinition = objectDefinition;
         }
 

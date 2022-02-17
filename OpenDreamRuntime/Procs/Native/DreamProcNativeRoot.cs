@@ -40,7 +40,7 @@ namespace OpenDreamRuntime.Procs.Native {
         public static async Task<DreamValue> NativeProc_alert(AsyncNativeProc.State state) {
             DreamObject mob;
             string message, title, button1, button2, button3;
-
+			DreamConnection connection;
             DreamValue usrArgument = state.Arguments.GetArgument(0, "Usr");
             if (usrArgument.TryGetValueAsDreamObjectOfType(DreamPath.Mob, out mob)) {
                 message = state.Arguments.GetArgument(1, "Message").Stringify();
@@ -48,18 +48,19 @@ namespace OpenDreamRuntime.Procs.Native {
                 button1 = state.Arguments.GetArgument(3, "Button1").Stringify();
                 button2 = state.Arguments.GetArgument(4, "Button2").Stringify();
                 button3 = state.Arguments.GetArgument(5, "Button3").Stringify();
-            } else {
-                mob = state.Usr;
+				connection = DreamManager.GetConnectionFromMob(usrArgument);
+			} else {
+                mob = state.Usr.GetValueAsDreamObject();
                 message = usrArgument.Stringify();
                 title = state.Arguments.GetArgument(1, "Message").Stringify();
                 button1 = state.Arguments.GetArgument(2, "Title").Stringify();
                 button2 = state.Arguments.GetArgument(3, "Button1").Stringify();
                 button3 = state.Arguments.GetArgument(4, "Button2").Stringify();
+				connection = DreamManager.GetConnectionFromMob(state.Usr);
             }
 
             if (String.IsNullOrEmpty(button1)) button1 = "Ok";
 
-            DreamConnection connection = DreamManager.GetConnectionFromMob(mob);
             return await connection.Alert(title, message, button1, button2, button3);
         }
 
@@ -466,10 +467,10 @@ namespace OpenDreamRuntime.Procs.Native {
         [DreamProcParameter("icon_state", Type = DreamValueType.String)]
         [DreamProcParameter("layer", Type = DreamValueType.Float)]
         [DreamProcParameter("dir", Type = DreamValueType.Float)]
-        public static DreamValue NativeProc_image(DreamObject instance, DreamObject usr, DreamProcArguments arguments) {
-            DreamObject imageObject = DreamManager.ObjectTree.CreateObject(DreamPath.Image);
-            imageObject.InitSpawn(arguments);
-            return new DreamValue(imageObject);
+        public static DreamValue NativeProc_image(DreamValue instance, DreamValue usr, DreamProcArguments arguments) {
+            DreamValue imageObject = DreamManager.ObjectTree.CreateObject(DreamPath.Image);
+            imageObject.GetValueAsDreamObject().InitSpawn(arguments);
+            return imageObject;
         }
 
         [DreamProc("isarea")]
@@ -948,10 +949,10 @@ namespace OpenDreamRuntime.Procs.Native {
                 for (int y = Math.Max(centerY - distance, 1); y < Math.Min(centerY + distance, mapMgr.Size.Y); y++) {
                     if (x == centerX && y == centerY) continue;
 
-                    DreamObject turf = mapMgr.GetTurf(x, y, centerZ);
+                    DreamValue turf = mapMgr.GetTurf(x, y, centerZ);
 
-                    view.AddValue(new DreamValue(turf));
-                    foreach (DreamValue content in turf.GetVariable("contents").GetValueAsDreamList().GetValues()) {
+                    view.AddValue(turf);
+                    foreach (DreamValue content in turf.GetValueAsDreamObject().GetVariable("contents").GetValueAsDreamList().GetValues()) {
                         view.AddValue(content);
                     }
                 }
@@ -991,14 +992,15 @@ namespace OpenDreamRuntime.Procs.Native {
             int centerX = center.GetVariable("x").GetValueAsInteger();
             int centerY = center.GetVariable("y").GetValueAsInteger();
 
-            foreach (DreamObject mob in DreamManager.Mobs) {
+            foreach (DreamValue valueMob in DreamManager.Mobs) {
+                DreamObject mob = valueMob.GetValueAsDreamObject();
                 int mobX = mob.GetVariable("x").GetValueAsInteger();
                 int mobY = mob.GetVariable("y").GetValueAsInteger();
 
                 if (mobX == centerX && mobY == centerY) continue;
 
                 if (Math.Abs(centerX - mobX) <= depth && Math.Abs(centerY - mobY) <= depth) {
-                    view.AddValue(new DreamValue(mob));
+                    view.AddValue(valueMob);
                 }
             }
 
@@ -1100,8 +1102,8 @@ namespace OpenDreamRuntime.Procs.Native {
                 };
             }
             var newRegex = DreamManager.ObjectTree.CreateObject(DreamPath.Regex);
-            newRegex.InitSpawn(arguments);
-            return new DreamValue(newRegex);
+            newRegex.GetValueAsDreamObject().InitSpawn(arguments);
+            return newRegex;
         }
 
         [DreamProc("replacetext")]

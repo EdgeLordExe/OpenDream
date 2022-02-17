@@ -6,7 +6,7 @@ namespace OpenDreamRuntime.Objects.MetaObjects {
 
         private IDreamManager _dreamManager = IoCManager.Resolve<IDreamManager>();
 
-        public override void OnObjectDeleted(DreamObject dreamObject) {
+        public override void OnObjectDeleted(DreamValue dreamObject) {
             base.OnObjectDeleted(dreamObject);
 
             dreamObject.SpawnProc("Del");

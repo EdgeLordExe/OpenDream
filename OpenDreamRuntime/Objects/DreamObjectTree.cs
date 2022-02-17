@@ -74,11 +74,11 @@ namespace OpenDreamRuntime.Objects {
 
         // It is the job of whatever calls this function to then initialize the object
         // by calling the result of DreamObject.InitProc or DreamObject.InitSpawn
-        public DreamObject CreateObject(DreamPath path) {
+        public DreamValue CreateObject(DreamPath path) {
             if (path.Equals(DreamPath.List)) {
-                return DreamList.CreateUninitialized();
+                return new DreamValue(DreamList.CreateUninitialized());
             } else {
-                return new DreamObject(GetObjectDefinition(path));
+                return DreamObject.CreateWrappedObject(GetObjectDefinition(path));
             }
         }
 

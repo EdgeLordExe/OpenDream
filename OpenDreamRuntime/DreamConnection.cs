@@ -31,9 +31,9 @@ namespace OpenDreamRuntime
         [ViewVariables] private bool _currentlyUpdatingStat;
         [ViewVariables] public IPlayerSession Session { get; }
 
-        [ViewVariables] public DreamObject ClientDreamObject;
+        [ViewVariables] public DreamValue ClientDreamObject;
 
-        [ViewVariables] private DreamObject _mobDreamObject;
+        [ViewVariables] private DreamValue _mobDreamObject;
 
         [ViewVariables] private string _outputStatPanel;
         [ViewVariables] private string _selectedStatPanel;
@@ -50,29 +50,31 @@ namespace OpenDreamRuntime
             }
         }
 
-        public DreamObject MobDreamObject
+        public DreamValue MobDreamObject
         {
             get => _mobDreamObject;
             set
             {
                 if (_mobDreamObject != value)
                 {
-                    if (_mobDreamObject != null) _mobDreamObject.SpawnProc("Logout");
 
-                    if (value != null && value.IsSubtypeOf(DreamPath.Mob))
+
+                    if (_mobDreamObject != null) _mobDreamObject.GetValueAsDreamObject().SpawnProc("Logout");
+
+                    if (value.IsTruthy() && value.GetValueAsDreamObject().IsSubtypeOf(DreamPath.Mob))
                     {
                         DreamConnection oldMobConnection = _dreamManager.GetConnectionFromMob(value);
-                        if (oldMobConnection != null) oldMobConnection.MobDreamObject = null;
+                        if (oldMobConnection != null) oldMobConnection.MobDreamObject = DreamValue.Null;
 
                         _mobDreamObject = value;
-                        ClientDreamObject?.SetVariable("eye", new DreamValue(_mobDreamObject));
-                        _mobDreamObject.SpawnProc("Login");
-                        Session.AttachToEntity(_atomManager.GetAtomEntity(_mobDreamObject));
+                        ClientDreamObject.GetValueAsDreamObject()?.SetVariable("eye", new DreamValue(_mobDreamObject));
+                        _mobDreamObject.GetValueAsDreamObject().SpawnProc("Login");
+                        Session.AttachToEntity(_atomManager.GetAtomEntity(_mobDreamObject.GetValueAsDreamObject()));
                     }
                     else
                     {
                         Session.DetachFromEntity();
-                        _mobDreamObject = null;
+                        _mobDreamObject = DreamValue.Null;
                     }
 
                     UpdateAvailableVerbs();
@@ -93,14 +95,14 @@ namespace OpenDreamRuntime
 
             if (MobDreamObject != null)
             {
-                List<DreamValue> mobVerbPaths = MobDreamObject.GetVariable("verbs").GetValueAsDreamList().GetValues();
+                List<DreamValue> mobVerbPaths = MobDreamObject.GetValueAsDreamObject().GetVariable("verbs").GetValueAsDreamList().GetValues();
 
                 foreach (DreamValue mobVerbPath in mobVerbPaths)
                 {
                     DreamPath path = mobVerbPath.GetValueAsPath();
                     if (path.LastElement is null) continue;
 
-                    _availableVerbs.Add(path.LastElement, MobDreamObject.GetProc(path.LastElement));
+                    _availableVerbs.Add(path.LastElement, MobDreamObject.GetValueAsDreamObject().GetProc(path.LastElement));
                 }
             }
 
@@ -121,9 +123,9 @@ namespace OpenDreamRuntime
             {
                 try
                 {
-                    var statProc = ClientDreamObject.GetProc("Stat");
+                    var statProc = ClientDreamObject.GetValueAsDreamObject().GetProc("Stat");
 
-                    await state.Call(statProc, ClientDreamObject, _mobDreamObject, new DreamProcArguments(null));
+                    await state.Call(statProc, ClientDreamObject.GetValueAsDreamObject(), _mobDreamObject.GetValueAsDreamObject(), new DreamProcArguments(null));
                     if (Session.Status == SessionStatus.InGame)
                     {
                         var msg = _netManager.CreateNetMessage<MsgUpdateStatPanels>();
@@ -196,7 +198,7 @@ namespace OpenDreamRuntime
                 new DreamValue(src)
             });
 
-            ClientDreamObject?.SpawnProc("Topic", topicArguments, MobDreamObject);
+            ClientDreamObject.GetValueAsDreamObject()?.SpawnProc("Topic", topicArguments, MobDreamObject.GetValueAsDreamObject());
         }
 
 
@@ -240,17 +242,18 @@ namespace OpenDreamRuntime
 
         public void HandleCommand(string command)
         {
+            DreamObject cachedObject = ClientDreamObject.GetValueAsDreamObject();
             switch (command) {
                 //TODO: Maybe move these verbs to DM code?
-                case ".north": ClientDreamObject.SpawnProc("North"); break;
-                case ".east": ClientDreamObject.SpawnProc("East"); break;
-                case ".south": ClientDreamObject.SpawnProc("South"); break;
-                case ".west": ClientDreamObject.SpawnProc("West"); break;
-                case ".northeast": ClientDreamObject.SpawnProc("Northeast"); break;
-                case ".southeast": ClientDreamObject.SpawnProc("Southeast"); break;
-                case ".southwest": ClientDreamObject.SpawnProc("Southwest"); break;
-                case ".northwest": ClientDreamObject.SpawnProc("Northwest"); break;
-                case ".center": ClientDreamObject.SpawnProc("Center"); break;
+                case ".north": cachedObject.SpawnProc("North"); break;
+                case ".east": cachedObject.SpawnProc("East"); break;
+                case ".south": cachedObject.SpawnProc("South"); break;
+                case ".west": cachedObject.SpawnProc("West"); break;
+                case ".northeast": cachedObject.SpawnProc("Northeast"); break;
+                case ".southeast": cachedObject.SpawnProc("Southeast"); break;
+                case ".southwest": cachedObject.SpawnProc("Southwest"); break;
+                case ".northwest": cachedObject.SpawnProc("Northwest"); break;
+                case ".center": cachedObject.SpawnProc("Center"); break;
 
                 default: {
                     if (_availableVerbs.TryGetValue(command, out DreamProc verb)) {
@@ -267,7 +270,7 @@ namespace OpenDreamRuntime
                                 arguments.Add(argumentName, value);
                             }
 
-                            await state.Call(verb, MobDreamObject, MobDreamObject, new DreamProcArguments(new(), arguments));
+                            await state.Call(verb, MobDreamObject.GetValueAsDreamObject(), MobDreamObject.GetValueAsDreamObject(), new DreamProcArguments(new(), arguments));
                             return DreamValue.Null;
                         });
                     }

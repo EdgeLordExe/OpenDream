@@ -27,15 +27,15 @@ namespace OpenDreamRuntime {
         private DreamCompiledJson _compiledJson;
 
         public DreamObjectTree ObjectTree { get; private set; }
-        public DreamObject WorldInstance { get; private set; }
+        public DreamValue WorldInstance { get; private set; }
         public int DMExceptionCount { get; set; }
 
         // Global state that may not really (really really) belong here
         public List<DreamValue> Globals { get; set; } = new();
         public DreamList WorldContentsList { get; set; }
-        public Dictionary<DreamObject, DreamList> AreaContents { get; set; } = new();
-        public Dictionary<DreamObject, int> ReferenceIDs { get; set; } = new();
-        public List<DreamObject> Mobs { get; set; } = new();
+        public Dictionary<DreamValue, DreamList> AreaContents { get; set; } = new();
+        public Dictionary<DreamValue, int> ReferenceIDs { get; set; } = new();
+        public List<DreamValue> Mobs { get; set; } = new();
         public Random Random { get; set; } = new();
 
         public void Initialize() {
@@ -55,7 +55,7 @@ namespace OpenDreamRuntime {
 
             _dreamMapManager.Initialize();
             WorldInstance = ObjectTree.CreateObject(DreamPath.World);
-            WorldInstance.InitSpawn(new DreamProcArguments(null));
+            WorldInstance.GetValueAsDreamObject().InitSpawn(new DreamProcArguments(null));
 
             if (_compiledJson.Globals != null) {
                 var jsonGlobals = _compiledJson.Globals;
@@ -72,11 +72,11 @@ namespace OpenDreamRuntime {
 
             if (json.GlobalInitProc != null) {
                 var globalInitProc = new DMProc("(global init)", null, null, null, json.GlobalInitProc.Bytecode, json.GlobalInitProc.MaxStackSize, true);
-                globalInitProc.Spawn(WorldInstance, new DreamProcArguments(new(), new()));
+                globalInitProc.Spawn(WorldInstance, new DreamProcArguments(new(), new()),DreamValue.Null);
             }
 
             _dreamMapManager.LoadMaps(json.Maps);
-            WorldInstance.SpawnProc("New");
+            WorldInstance.GetValueAsDreamObject().SpawnProc("New");
         }
 
         public void Shutdown() {
