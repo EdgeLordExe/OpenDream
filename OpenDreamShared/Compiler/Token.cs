@@ -90,6 +90,7 @@
         DM_ModulusEquals,
         DM_New,
         DM_Null,
+        DM_Namespace,
         DM_Period,
         DM_Plus,
         DM_PlusEquals,

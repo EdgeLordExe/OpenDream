@@ -114,7 +114,7 @@ namespace DMCompiler.DM {
         public DreamTypeJson CreateJsonRepresentation() {
             DreamTypeJson typeJson = new DreamTypeJson();
 
-            typeJson.Path = Path.PathString;
+            typeJson.Path = Path.GetFullPath();
             typeJson.Parent = Parent?.Id;
 
             if (Variables.Count > 0 || VariableOverrides.Count > 0) {

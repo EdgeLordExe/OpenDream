@@ -54,6 +54,7 @@ namespace DMCompiler.DM.Visitors {
 
                     break;
                 }
+                case DMASTNamespace namespaceDefinition: ProcessNamespace(namespaceDefinition); break;
                 default: throw new ArgumentException("Invalid object statement");
             }
         }
@@ -165,6 +166,10 @@ namespace DMCompiler.DM.Visitors {
             } catch (CompileErrorException e) {
                 DMCompiler.Error(e.Error);
             }
+        }
+
+        public void ProcessNamespace(DMASTNamespace space){
+            ProcessBlockInner(space.Block);
         }
 
         // TODO Move this to an appropriate location

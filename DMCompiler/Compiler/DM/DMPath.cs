@@ -49,7 +49,7 @@ namespace DMCompiler.Compiler.DM
             }
             if (currentPath.Count > 0)
             {
-                TypePath = new DreamPath(DreamPath.PathType.Absolute, currentPath.ToArray());
+                TypePath = new DreamPath(path.Namespace,DreamPath.PathType.Absolute, currentPath.ToArray());
             }
             else
             {
@@ -75,7 +75,7 @@ namespace DMCompiler.Compiler.DM
                 currentPath.Add(elements[readIdx]);
                 readIdx += 1;
             }
-            ObjectPath = new DreamPath(path.Type, currentPath.ToArray());
+            ObjectPath = new DreamPath(path.Namespace,path.Type, currentPath.ToArray());
             if (ObjectPath.Elements.Length == 0)
             {
                 IsToplevel = true;
@@ -109,7 +109,7 @@ namespace DMCompiler.Compiler.DM
             }
             if (currentPath.Count > 0)
             {
-                TypePath = new DreamPath(DreamPath.PathType.Absolute, currentPath.ToArray());
+                TypePath = new DreamPath(path.Namespace,DreamPath.PathType.Absolute, currentPath.ToArray());
             }
             else
             {
@@ -142,7 +142,7 @@ namespace DMCompiler.Compiler.DM
                 readIdx += 1;
             }
             if (currentPath.Count > 0) {
-                TypePath = new DreamPath(DreamPath.PathType.Absolute, currentPath.ToArray());
+                TypePath = new DreamPath(path.Namespace,DreamPath.PathType.Absolute, currentPath.ToArray());
             } else {
                 TypePath = null;
             }

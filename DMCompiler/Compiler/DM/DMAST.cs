@@ -119,6 +119,7 @@ namespace DMCompiler.Compiler.DM {
         public void VisitCallableSuper(DMASTCallableSuper super) { throw new NotImplementedException(); }
         public void VisitCallableSelf(DMASTCallableSelf self) { throw new NotImplementedException(); }
         public void VisitCallableGlobalProc(DMASTCallableGlobalProc globalIdentifier) { throw new NotImplementedException(); }
+        public void VisitNamespace(DMASTNamespace space){throw new NotImplementedException();}
 
     }
 
@@ -1753,6 +1754,20 @@ namespace DMCompiler.Compiler.DM {
         public override void Visit(DMASTVisitor visitor)
         {
             visitor.VisitCallableGlobalProc(this);
+        }
+    }
+
+    public class DMASTNamespace : DMASTStatement{
+        public DreamNamespace Space;
+        public DMASTBlockInner Block;
+
+        public DMASTNamespace(Location location, DreamNamespace space, DMASTBlockInner block) : base(location){
+            Space = space;
+            Block = block;
+        }
+
+        public override void Visit(DMASTVisitor visitor){
+            visitor.VisitNamespace(this);
         }
     }
 }

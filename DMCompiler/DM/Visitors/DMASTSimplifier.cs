@@ -185,6 +185,11 @@ namespace DMCompiler.DM.Visitors {
         public void VisitProcStatementThrow(DMASTProcStatementThrow statementThrow) {
             SimplifyExpression(ref statementThrow.Value);
         }
+
+        public void VisitNamespace(DMASTNamespace space){
+            space.Block.Visit(this);
+        }
+
         #endregion Procs
 
         private void SimplifyExpression(ref DMASTExpression expression) {

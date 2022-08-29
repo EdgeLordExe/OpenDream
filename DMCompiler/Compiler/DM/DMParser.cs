@@ -14,6 +14,8 @@ namespace DMCompiler.Compiler.DM {
 
         private DreamPath _currentPath = DreamPath.Root;
 
+        private DreamNamespace _currentNamespace = DreamNamespace.World;
+
         private bool _unimplementedWarnings;
 
         public DMParser(DMLexer lexer, bool unimplementedWarnings) : base(lexer) {
@@ -100,6 +102,7 @@ namespace DMCompiler.Compiler.DM {
                 } catch (CompileErrorException) { }
 
                 if (Current().Type != TokenType.EndOfFile) {
+					
                     Warning("Error recovery had to skip to the next top-level statement");
                     LocateNextTopLevel();
                 }
@@ -136,17 +139,29 @@ namespace DMCompiler.Compiler.DM {
 
         public DMASTStatement Statement(bool requireDelimiter = true)
         {
+			
+			
             var loc = Current().Location;
             DMASTPath path = Path();
-
+            DMASTStatement statement = null;
+			
             if (path != null) {
-                DreamPath oldPath = _currentPath;
                 Whitespace();
+				
+                DreamPath oldPath = _currentPath;
+				DreamNamespace oldNamespace = _currentNamespace;
+
+				if(_currentNamespace != DreamNamespace.World && path.Path.Namespace != _currentNamespace){
+					Error("Defining objects, variables and procs for other namespaces from within non-global namespace is not allowed!");
+				}
+
+				_currentNamespace = path.Path.Namespace;
+				if(_currentNamespace != DreamNamespace.World){
+				}
                 _currentPath = _currentPath.Combine(path.Path);
                 if (_currentPath.LastElement == "proc") _currentPath = _currentPath.RemoveElement(-1);
 
                 try {
-                    DMASTStatement statement = null;
 
                     //Proc definition
                     if (Check(TokenType.DM_LeftParenthesis)) {
@@ -240,13 +255,21 @@ namespace DMCompiler.Compiler.DM {
                     return statement;
                 } finally {
                     _currentPath = oldPath;
+					_currentNamespace = oldNamespace;
                 }
-            }
+            } else {
+				statement = Namespace();
+				if(statement != null){
+					return statement;
+				}
+			}
 
             return null;
         }
 
         public DMASTPath Path(bool expression = false) {
+
+            string nameSpaceText = PathNamespace();
             Token firstToken = Current();
             DreamPath.PathType pathType = DreamPath.PathType.Relative;
             bool hasPathTypeToken = true;
@@ -263,7 +286,7 @@ namespace DMCompiler.Compiler.DM {
 
                 if (expression) return null;
             }
-
+            DreamNamespace nameSpace = nameSpaceText == null ? _currentNamespace : DreamNamespace.GetNamespace(nameSpaceText);
             string pathElement = PathElement();
             if (pathElement != null) {
                 List<string> pathElements = new() { pathElement };
@@ -276,7 +299,7 @@ namespace DMCompiler.Compiler.DM {
                     }
                 }
 
-                return new DMASTPath(firstToken.Location, new DreamPath(pathType, pathElements.ToArray()));
+                return new DMASTPath(firstToken.Location, new DreamPath(nameSpace,pathType, pathElements.ToArray()));
             } else if (hasPathTypeToken) {
                 if (expression) ReuseToken(firstToken);
 
@@ -284,6 +307,19 @@ namespace DMCompiler.Compiler.DM {
             }
 
             return null;
+        }
+
+        public string PathNamespace(){
+            Token currentToken = Current();
+
+			if(currentToken.Type != TokenType.DM_Identifier) return null;
+		
+            Advance();
+            if(!Check(TokenType.DM_Colon) || !Check(TokenType.DM_Colon)){
+                ReuseToken(currentToken);
+                return null;
+            }
+            return currentToken.Text;
         }
 
         public string PathElement() {
@@ -847,11 +883,32 @@ namespace DMCompiler.Compiler.DM {
                 }
 
                 return new DMASTProcStatementIf(loc, condition, body, elseBody);
-            } else {
+            } else { 
                 return null;
             }
         }
 
+		public DMASTNamespace Namespace(){
+
+			if(Check(TokenType.DM_Namespace)){
+                if(_currentNamespace != DreamNamespace.World){
+                    Error("Nested namespaces are not allowed!");
+                }
+
+				Whitespace();
+				_currentNamespace = DreamNamespace.GetNamespace(Identifier().Identifier);
+				DMASTBlockInner returnBlock = Block();
+				if(returnBlock == null){
+                    Error("Empty Namespaces arent allowed!");
+                    return null;
+				}
+				DMASTNamespace returnNamespace = new DMASTNamespace(Current().Location,_currentNamespace,returnBlock);
+				_currentNamespace = DreamNamespace.World;
+				return returnNamespace;
+			}
+			return null;
+		}
+		
         public DMASTProcStatement For() {
             if (Check(TokenType.DM_For)) {
                 Whitespace();

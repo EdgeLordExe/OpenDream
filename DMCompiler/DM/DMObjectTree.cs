@@ -39,7 +39,8 @@ namespace DMCompiler.DM {
 
                 DMObject parent = null;
                 if (path.Elements.Length > 1) {
-                    parent = GetDMObject(path.FromElements(0, -2), true);
+
+                    parent = GetDMObject(path.FromElements(0, -2,true), true);
                 } else if (path.Elements.Length == 1) {
                     switch (path.LastElement) {
                         case "client":
@@ -47,10 +48,11 @@ namespace DMCompiler.DM {
                         case "list":
                         case "savefile":
                         case "world":
-                            parent = GetDMObject(DreamPath.Root);
+                            parent = GetDMObject(path.Namespace != DreamNamespace.World? new DreamPath( path.Namespace,DreamPath.Root):DreamPath.Root);
                             break;
                         default:
-                            parent = GetDMObject(DMCompiler.Settings.NoStandard ? DreamPath.Root : DreamPath.Datum);
+                            DreamPath rootPath = DMCompiler.Settings.NoStandard ? DreamPath.Root : DreamPath.Datum;
+                            parent = GetDMObject(path.Namespace != DreamNamespace.World? new DreamPath(path.Namespace,rootPath):rootPath);
                             break;
                     }
                 }

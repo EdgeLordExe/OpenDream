@@ -53,7 +53,8 @@ namespace DMCompiler.Compiler.DM {
             { "step", TokenType.DM_Step },
             { "try", TokenType.DM_Try },
             { "catch", TokenType.DM_Catch },
-            { "throw", TokenType.DM_Throw }
+            { "throw", TokenType.DM_Throw },
+            { "namespace", TokenType.DM_Namespace }
         };
 
         public int BracketNesting = 0;
@@ -309,7 +310,6 @@ namespace DMCompiler.Compiler.DM {
                     }
                 }
             }
-
             return token;
         }
 

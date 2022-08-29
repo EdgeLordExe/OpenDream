@@ -70,6 +70,7 @@ namespace OpenDreamShared.Dream {
         }
 
         public PathType Type;
+        public DreamNamespace Namespace = DreamNamespace.World;
 
         private string[] _elements;
         private string _pathString;
@@ -82,18 +83,39 @@ namespace OpenDreamShared.Dream {
             SetFromString(path);
         }
 
-        public DreamPath(PathType type, string[] elements) {
+        public DreamPath(DreamNamespace space, DreamPath path){
+            Type = PathType.Absolute;
+            _elements = null;
+            _pathString = null;
+
+            SetFromString(path.PathString);
+            Namespace = space;
+        }
+
+        public DreamPath(DreamNamespace space,PathType type, string[] elements) {
             Type = type;
             _elements = elements;
             _pathString = null;
+            Namespace = space;
 
             Normalize(true);
         }
 
         public void SetFromString(string rawPath) {
+
+
+            if(rawPath.Contains("::")){
+                string[] tempPath = rawPath.Split("::",2);
+                Namespace = DreamNamespace.GetNamespace(tempPath[0]);
+                rawPath = tempPath[1];
+            } else {
+                Namespace = DreamNamespace.World;
+            }
+
             char pathTypeChar = rawPath[0];
             string[] tempElements = rawPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
             bool skipFirstChar = false;
+
 
             switch (pathTypeChar)
             {
@@ -125,6 +147,8 @@ namespace OpenDreamShared.Dream {
         }
 
         public bool IsDescendantOf(DreamPath path) {
+            if(path.Namespace != Namespace) return false;
+
             if (path.Elements.Length > Elements.Length) return false;
 
             for (int i = 0; i < path.Elements.Length; i++) {
@@ -157,7 +181,7 @@ namespace OpenDreamShared.Dream {
             return elements;
         }
 
-        public DreamPath FromElements(int elementStart, int elementEnd = -1) {
+        public DreamPath FromElements(int elementStart, int elementEnd = -1, bool inheritNamespace = true) {
             string[] elements = GetElements(elementStart, elementEnd);
             string rawPath = String.Empty;
 
@@ -168,6 +192,10 @@ namespace OpenDreamShared.Dream {
             }
 
             rawPath = "/" + rawPath;
+            if(inheritNamespace && Namespace != DreamNamespace.World){
+                rawPath = Namespace.name + "::" + rawPath;
+            }
+            Console.WriteLine(rawPath);
             return new DreamPath(rawPath);
         }
 
@@ -177,24 +205,26 @@ namespace OpenDreamShared.Dream {
             List<string> elements = new List<string>();
             elements.AddRange(GetElements(0, elementIndex));
             elements.AddRange(GetElements(Math.Min(elementIndex + 1, Elements.Length), -1));
-            return new DreamPath(Type, elements.ToArray());
+            return new DreamPath(Namespace,Type, elements.ToArray());
         }
 
         public DreamPath Combine(DreamPath path) {
             switch (path.Type) {
-                case PathType.Relative: return new DreamPath(PathString + "/" + path.PathString);
+                case PathType.Relative: return new DreamPath( GetFullPath() + "/" + path.PathString);
                 case PathType.Absolute: return path;
-                default: return new DreamPath(PathString + path.PathString);
+                default: return new DreamPath(GetFullPath() + path.PathString);
             }
         }
 
         public override string ToString() {
-            return PathString;
+            return Namespace.ToString() + "::" + PathString;
         }
 
         public override bool Equals(object obj) => obj is DreamPath other && Equals(other);
 
         public bool Equals(DreamPath other) {
+            if(Namespace != other.Namespace) return false;
+
             if (other.Elements.Length != Elements.Length) return false;
 
             for (int i = 0; i < Elements.Length; i++) {
@@ -205,7 +235,7 @@ namespace OpenDreamShared.Dream {
         }
 
         public override int GetHashCode() {
-            return PathString.GetHashCode();
+            return (Namespace.ToString() + "::" + PathString).GetHashCode();
         }
 
         public static bool operator ==(DreamPath lhs, DreamPath rhs) => lhs.Equals(rhs);
@@ -238,6 +268,10 @@ namespace OpenDreamShared.Dream {
             }
 
             Elements = _elements[..writeIdx];
+        }
+
+        public string GetFullPath(){
+            return (Namespace != DreamNamespace.World ? (Namespace.name + "::"):"" )+ PathString;
         }
     }
 }
