@@ -192,6 +192,27 @@ namespace OpenDreamRuntime.Objects {
 
             return newList;
         }
+
+        override public void Delete(IDreamManager manager){
+            base.Delete(manager);
+            foreach(var value in _values){
+               if(value.TryGetValueAsDreamObject(out var heldDreamObject)){
+                   heldDreamObject?.DecrementRefCount(manager);
+               } 
+            }
+            foreach(var value in _values){
+               if(value.TryGetValueAsDreamObject(out var heldDreamObject)){
+                   heldDreamObject?.DecrementRefCount(manager);
+               } 
+            }
+            _values = null;
+            foreach(var value in _associativeValues){
+               if(value.Value.TryGetValueAsDreamObject(out var heldDreamObject)){
+                   heldDreamObject?.DecrementRefCount(manager);
+               } 
+            }
+            _associativeValues = null;
+        }
     }
 
     // /datum.vars list

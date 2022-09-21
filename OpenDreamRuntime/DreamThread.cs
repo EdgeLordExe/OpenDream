@@ -106,6 +106,8 @@ namespace OpenDreamRuntime {
 
         public abstract void AppendStackFrame(StringBuilder builder);
 
+        public virtual void OnStackDropped() {}
+
         // Most implementations won't require this, so give it a default
         public virtual void ReturnedInto(DreamValue value) {}
     }
@@ -194,6 +196,8 @@ namespace OpenDreamRuntime {
             if (_current?.WaitFor == false) {
                 _syncCount--;
             }
+            
+            _stack.Peek().OnStackDropped();
 
             if (!_stack.TryPop(out _current)) {
                 _current = null;

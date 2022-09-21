@@ -7,6 +7,23 @@ namespace OpenDreamRuntime.Objects {
     public class DreamObject {
         public DreamObjectDefinition? ObjectDefinition { get; protected set; }
         public bool Deleted = false;
+        private ulong RefCount = 0;
+
+        public void IncrementRefCount(){
+            RefCount++;
+        }
+
+        public void DecrementRefCount(IDreamManager manager){
+            if(RefCount == 0){
+                throw new Exception("Invalid attempt at decrementing DreamObject's ref count while it is 0");
+            }
+
+            RefCount--;
+            if(RefCount == 0){
+                Delete(manager);
+            }
+        }
+        
 
         private Dictionary<string, DreamValue> _variables = new();
 
@@ -54,8 +71,15 @@ namespace OpenDreamRuntime.Objects {
             return referenceID;
         }
 
-        public void Delete(IDreamManager manager) {
+        public virtual void Delete(IDreamManager manager) {
             if (Deleted) return;
+            foreach (var variable in _variables)
+            {
+                if(variable.Value.TryGetValueAsDreamObject(out var dreamObject)){
+                    dreamObject?.DecrementRefCount(manager);
+                }
+            }
+            
             ObjectDefinition?.MetaObject?.OnObjectDeleted(this);
             Deleted = true;
             //we release all relevant information, making this a very tiny object

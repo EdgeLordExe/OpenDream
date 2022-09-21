@@ -23,7 +23,7 @@ namespace OpenDreamRuntime.Procs {
         public static ProcStatus? Assign(DMProcState state) {
             DMReference reference = state.ReadReference();
             DreamValue value = state.Pop();
-
+            
             state.AssignReference(reference, value);
             state.Push(value);
             return null;
@@ -35,6 +35,9 @@ namespace OpenDreamRuntime.Procs {
 
             foreach (DreamValue value in state.PopCount(size)) {
                 list.AddValue(value);
+                if(value.TryGetValueAsDreamObject(out var heldDreamObject)){
+                    heldDreamObject?.IncrementRefCount();
+                }
             }
 
             state.Push(new DreamValue(list));
@@ -48,6 +51,10 @@ namespace OpenDreamRuntime.Procs {
             ReadOnlySpan<DreamValue> popped = state.PopCount(size * 2);
             for (int i = 0; i < popped.Length; i += 2) {
                 DreamValue key = popped[i];
+                
+                if(popped[i + 1].TryGetValueAsDreamObject(out var heldDreamObject)){
+                    heldDreamObject?.IncrementRefCount();
+                }
 
                 if (key == DreamValue.Null) {
                     list.AddValue(popped[i + 1]);
@@ -282,6 +289,10 @@ namespace OpenDreamRuntime.Procs {
         public static ProcStatus? ListAppend(DMProcState state) {
             DreamValue value = state.Pop();
             DreamList list = state.Pop().GetValueAsDreamList();
+            
+            if(value.TryGetValueAsDreamObject(out var heldDreamObject)){
+                heldDreamObject?.IncrementRefCount();
+            }
 
             list.AddValue(value);
             state.Push(new DreamValue(list));
@@ -296,6 +307,10 @@ namespace OpenDreamRuntime.Procs {
             if (index.TryGetValueAsInteger(out var idx) && idx == list.GetLength() + 1)
             {
                 list.Resize(list.GetLength() + 1);
+            }
+            
+            if(value.TryGetValueAsDreamObject(out var heldDreamObject)){
+                heldDreamObject?.IncrementRefCount();
             }
 
             list.SetValue(index, value);

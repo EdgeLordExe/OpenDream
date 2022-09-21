@@ -233,6 +233,15 @@ namespace OpenDreamRuntime.Procs {
             builder.Append("(...)");
         }
 
+        public override void OnStackDropped(){
+            foreach(var variable in _localVariables){
+                if(variable.TryGetValueAsDreamObject(out var heldDreamObject)){
+                    heldDreamObject?.DecrementRefCount(DreamManager);
+                }
+            }
+
+        }
+
         public void Jump(int position) {
             _pc = position;
         }
@@ -377,22 +386,78 @@ namespace OpenDreamRuntime.Procs {
 
         public void AssignReference(DMReference reference, DreamValue value) {
             switch (reference.RefType) {
-                case DMReference.Type.Self: Result = value; break;
-                case DMReference.Type.Argument: _localVariables[reference.Index] = value; break;
-                case DMReference.Type.Local: _localVariables[ArgumentCount + reference.Index] = value; break;
-                case DMReference.Type.SrcField: Instance.SetVariable(reference.Name, value); break;
-                case DMReference.Type.Global: DreamManager.Globals[reference.Index] = value; break;
-                case DMReference.Type.Src:
+                case DMReference.Type.Self:{ 
+                    if(Result.TryGetValueAsDreamObject(out var dreamObject)){
+                        dreamObject?.DecrementRefCount(DreamManager);
+                    }
+                    if(value.TryGetValueAsDreamObject(out var newHeldDreamObject)){
+                        newHeldDreamObject?.IncrementRefCount();
+                    }
+                    Result = value; 
+                    break;
+                }
+                case DMReference.Type.Argument:{
+                    if(_localVariables[reference.Index].TryGetValueAsDreamObject(out var heldDreamObject)){
+                        heldDreamObject?.DecrementRefCount(DreamManager);
+                    }
+                    
+                    if(value.TryGetValueAsDreamObject(out var newHeldDreamObject)){
+                        newHeldDreamObject?.IncrementRefCount();
+                    }
+
+                    _localVariables[reference.Index] = value;
+                    break;
+                }
+                case DMReference.Type.Local:{
+                    if(_localVariables[ArgumentCount + reference.Index].TryGetValueAsDreamObject(out var heldDreamObject)){
+                        heldDreamObject?.DecrementRefCount(DreamManager);
+                    }
+                    if(value.TryGetValueAsDreamObject(out var newHeldDreamObject)){
+                        newHeldDreamObject?.IncrementRefCount();
+                    }
+                    _localVariables[ArgumentCount + reference.Index] = value;
+                    break;
+                }
+                case DMReference.Type.SrcField:{
+                    if(Instance.GetVariable(reference.Name).TryGetValueAsDreamObject(out var heldDreamObject)){
+                        heldDreamObject?.DecrementRefCount(DreamManager);
+                    }
+                    if(value.TryGetValueAsDreamObject(out var newHeldDreamObject)){
+                        newHeldDreamObject?.IncrementRefCount();
+                    }
+                    Instance.SetVariable(reference.Name, value);
+                    break;
+                }
+                case DMReference.Type.Global:{
+                    if(DreamManager.Globals[reference.Index].TryGetValueAsDreamObject(out var heldDreamObject)){
+                        heldDreamObject?.DecrementRefCount(DreamManager);
+                    }
+                    if(value.TryGetValueAsDreamObject(out var newHeldDreamObject)){
+                        newHeldDreamObject?.IncrementRefCount();
+                    }
+                    DreamManager.Globals[reference.Index] = value;
+                    break;
+                }
+                case DMReference.Type.Src:{
                     //TODO: src can be assigned to non-DreamObject values
                     if (!value.TryGetValueAsDreamObject(out Instance)) {
                         throw new Exception($"Cannot assign src to {value}");
                     }
 
                     break;
+                }
                 case DMReference.Type.Field: {
                     DreamValue owner = Pop();
                     if (!owner.TryGetValueAsDreamObject(out var ownerObj) || ownerObj == null)
                         throw new Exception($"Cannot assign field \"{reference.Name}\" on {owner}");
+                    
+                    if(ownerObj.GetVariable(reference.Name).TryGetValueAsDreamObject(out var heldDreamObject)){
+                        heldDreamObject?.DecrementRefCount(DreamManager);
+                    }
+                    
+                    if(value.TryGetValueAsDreamObject(out var newHeldDreamObject)){
+                        newHeldDreamObject?.IncrementRefCount();
+                    }
 
                     ownerObj.SetVariable(reference.Name, value);
                     break;
@@ -402,6 +467,14 @@ namespace OpenDreamRuntime.Procs {
                     DreamValue list = Pop();
                     if (!list.TryGetValueAsDreamList(out var listObj))
                         throw new Exception($"Cannot assign to index {index} of {list}");
+                    
+                    if(listObj.GetValue(index).TryGetValueAsDreamObject(out var heldDreamObject)){
+                        heldDreamObject?.DecrementRefCount(DreamManager);
+                    }
+
+                    if(value.TryGetValueAsDreamObject(out var newHeldDreamObject)){
+                        newHeldDreamObject?.IncrementRefCount();
+                    }
 
                     listObj.SetValue(index, value);
                     break;
