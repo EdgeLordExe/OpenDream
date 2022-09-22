@@ -50,6 +50,7 @@ namespace OpenDreamRuntime {
         public DreamValue(DreamObject value) {
             Type = DreamValueType.DreamObject;
             Value = value;
+            value.IncrementRefCount();
         }
 
         public DreamValue(DreamPath value) {
@@ -80,6 +81,7 @@ namespace OpenDreamRuntime {
                 DreamProcArguments => DreamValueType.Reference,
                 _ => throw new ArgumentException("Invalid DreamValue value (" + value + ", " + value.GetType() + ")")
             };
+            IncrementDreamObjectRefCount();
         }
 
         public override string ToString() {
@@ -305,6 +307,21 @@ namespace OpenDreamRuntime {
         public static bool operator !=(DreamValue a, DreamValue b) {
             return !a.Equals(b);
         }
+        
+        public void IncrementDreamObjectRefCount(){
+            if(Type == DreamValueType.DreamObject){
+                DreamObject obj = (DreamObject)Value;
+                obj.IncrementRefCount();
+            }
+        }
+
+        public void DecrementDreamObjectRefCount(){
+            if(Type == DreamValueType.DreamObject){
+                DreamObject obj = (DreamObject)Value;
+                obj.DecrementRefCount();
+            }
+        }
+
     }
 
     public sealed class DreamValueJsonConverter : JsonConverter<DreamValue> {

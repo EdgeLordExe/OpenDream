@@ -45,6 +45,7 @@ namespace OpenDreamRuntime.Objects {
             var list = new DreamList(collection.Count);
 
             foreach (DreamObject value in collection) {
+                value.IncrementRefCount();
                 list._values.Add(new DreamValue(value));
             }
 
@@ -97,14 +98,19 @@ namespace OpenDreamRuntime.Objects {
             if (key.TryGetValueAsInteger(out int keyInteger)) {
                 if (allowGrowth && keyInteger == _values.Count + 1) {
                     _values.Add(value);
+                    value.IncrementDreamObjectRefCount();
                 } else {
+                    _values[keyInteger - 1].DecrementDreamObjectRefCount();
                     _values[keyInteger - 1] = value;
+                    value.IncrementDreamObjectRefCount();
                 }
             } else {
                 if (!ContainsValue(key)) _values.Add(key);
 
                 _associativeValues ??= new Dictionary<DreamValue, DreamValue>(1);
+                _associativeValues[key].DecrementDreamObjectRefCount();
                 _associativeValues[key] = value;
+                value.IncrementDreamObjectRefCount();
             }
         }
 
@@ -115,12 +121,13 @@ namespace OpenDreamRuntime.Objects {
                 BeforeValueRemoved?.Invoke(this, new DreamValue(valueIndex), _values[valueIndex]);
 
                 _values.RemoveAt(valueIndex);
+                value.DecrementDreamObjectRefCount();
             }
         }
 
         public void AddValue(DreamValue value) {
             _values.Add(value);
-
+            value.IncrementDreamObjectRefCount();
             ValueAssigned?.Invoke(this, new DreamValue(_values.Count), value);
         }
 
@@ -149,6 +156,7 @@ namespace OpenDreamRuntime.Objects {
 
             if (BeforeValueRemoved != null) {
                 for (int i = end - 1; i >= start; i--) {
+                    _values[i - 1].DecrementDreamObjectRefCount();
                     BeforeValueRemoved.Invoke(this, new DreamValue(i), _values[i - 1]);
                 }
             }
@@ -157,6 +165,7 @@ namespace OpenDreamRuntime.Objects {
         }
 
         public void Insert(int index, DreamValue value) {
+            value.IncrementDreamObjectRefCount();
             _values.Insert(index - 1, value);
         }
 
@@ -192,6 +201,19 @@ namespace OpenDreamRuntime.Objects {
 
             return newList;
         }
+
+       override public void Delete(){
+           base.Delete();
+
+           foreach(var variable in _values){
+               variable.DecrementDreamObjectRefCount();
+           }
+           if(_associativeValues is not null){
+                foreach(var assocVariable in _associativeValues){
+                    assocVariable.Value.DecrementDreamObjectRefCount();
+                }
+           }
+       } 
     }
 
     // /datum.vars list
@@ -205,6 +227,7 @@ namespace OpenDreamRuntime.Objects {
         public static DreamListVars Create(DreamObject dreamObject) {
             var list = new DreamListVars(dreamObject);
             list.InitSpawn(new DreamProcArguments(null));
+            dreamObject.IncrementRefCount();
             return list;
         }
 
@@ -235,6 +258,11 @@ namespace OpenDreamRuntime.Objects {
             } else {
                 throw new Exception($"Invalid var index {key}");
             }
+        }
+
+        public override void Delete(){
+            base.Delete();
+            _dreamObject.DecrementRefCount();
         }
     }
 
@@ -283,8 +311,10 @@ namespace OpenDreamRuntime.Objects {
                 if (!root.GlobalVariables.TryGetValue(varName, out var globalId)) {
                     throw new Exception($"Cannot set value of undefined global \"{varName}\"");
                 }
-
+                
+                _dreamMan.Globals[globalId].DecrementDreamObjectRefCount();
                 _dreamMan.Globals[globalId] = value;
+                value.IncrementDreamObjectRefCount();
             } else {
                 throw new Exception($"Invalid var index {key}");
             }
